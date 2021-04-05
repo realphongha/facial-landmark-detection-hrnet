@@ -6,7 +6,7 @@ import tensorflow as tf
 from tqdm import tqdm
 
 import fmd
-from postprocessing import parse_heatmaps
+from postprocessing import parse_heatmaps, draw_marks
 from preprocessing import crop_face, normalize
 from quantization import TFLiteModelPredictor
 
@@ -14,15 +14,14 @@ from quantization import TFLiteModelPredictor
 def compute_nme(prediction, ground_truth):
     """This function is based on the official HRNet implementation."""
 
-    interocular = np.linalg.norm(ground_truth[60, ] - ground_truth[72, ])
+    interocular = np.linalg.norm(ground_truth[45, ] - ground_truth[36, ])
     rmse = np.sum(np.linalg.norm(
-        prediction - ground_truth, axis=1)) / (interocular)
-
+        prediction - ground_truth, axis=1)) / interocular
     return rmse
 
 
-def evaluate(dataset: fmd.mark_dataset.dataset, model):
-    """Evaluate the model on the dataset. The evaluation method should be the 
+def evaluate(dataset: fmd.mark_dataset.dataset, model, n_points):
+    """Evaluate the model on the dataset. The evaluation method should be the
     same with the official code.
 
     Args:
@@ -39,28 +38,37 @@ def evaluate(dataset: fmd.mark_dataset.dataset, model):
     for sample in tqdm(dataset):
         # Get image and marks.
         image = sample.read_image()
-        marks = sample.marks
+        marks = sample.marks[:n_points]
 
         # Crop the face out of the image.
-        image_cropped, border, bbox = crop_face(image, marks, scale=1.2)
+        image_cropped, border, bbox = crop_face(image, marks, scale=1)
         image_size = image_cropped.shape[:2]
 
         # Get the prediction from the model.
-        image_cropped = cv2.resize(image_cropped, (256, 256))
+        image_cropped = cv2.resize(image_cropped, (128, 128))
         img_rgb = cv2.cvtColor(image_cropped, cv2.COLOR_BGR2RGB)
-        img_input = normalize(np.array(img_rgb, dtype=np.float32))
+        # img_input = normalize(np.array(img_rgb, dtype=np.float32))
 
         # Do prediction.
-        heatmaps = model.predict(tf.expand_dims(img_input, 0))[0]
+        heatmaps = model.predict(tf.expand_dims(img_rgb, 0))
+        marks_prediction = np.reshape(heatmaps, (-1, 2))
+        marks_prediction *= (bbox[2]-bbox[0])
+        marks_prediction[:, 0] += bbox[0]
+        marks_prediction[:, 1] += bbox[1]
+
+        # draw_marks(image, marks_prediction)
+        # print(bbox)
+        # cv2.imwrite("sample.jpg", image)
+        # quit()
 
         # Parse the heatmaps to get mark locations.
-        marks_prediction, _ = parse_heatmaps(heatmaps, image_size)
+        # marks_prediction, _ = parse_heatmaps(heatmaps, image_size)
 
-        # Transform the marks back to the original image dimensions.
-        x0 = bbox[0] - border
-        y0 = bbox[1] - border
-        marks_prediction[:, 0] += x0
-        marks_prediction[:, 1] += y0
+        # # Transform the marks back to the original image dimensions.
+        # x0 = bbox[0] - border
+        # y0 = bbox[1] - border
+        # marks_prediction[:, 0] += x0
+        # marks_prediction[:, 1] += y0
 
         # Compute NME.
         nme_temp = compute_nme(marks_prediction, marks[:, :2])
@@ -94,18 +102,19 @@ def evaluate(dataset: fmd.mark_dataset.dataset, model):
 
 
 def make_dataset():
-    wflw_dir = "/home/robin/data/facial-marks/wflw/WFLW_images"
-    ds_wflw = fmd.wflw.WFLW(False, "wflw_test")
-    ds_wflw.populate_dataset(wflw_dir)
+    data_dir = "/content/data/300W_LP/"
+    ds = fmd.DS300W_LP("300W_LP_test", is_test=True)
+    ds.populate_dataset(data_dir)
 
-    return ds_wflw
+    return ds
 
 
 if __name__ == "__main__":
 
     # Evaluate with FP32 model.
-    model = tf.keras.models.load_model("exported/hrnetv2")
-    print("FP32: ", evaluate(make_dataset(), model))
+    # model = tf.keras.models.load_model("exported/hrnetv2")
+    model = tf.keras.models.load_model("assets/pose_model")
+    print("FP32: ", evaluate(make_dataset(), model, n_points=68))
 
     # # Evaluate with FP16 model.
     # model_qdr = TFLiteModelPredictor(

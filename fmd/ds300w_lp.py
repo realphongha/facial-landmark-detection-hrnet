@@ -2,12 +2,16 @@ import cv2
 import numpy as np
 from scipy.io import loadmat
 
-from mark_dataset.dataset import MarkDataset
-from mark_dataset.util import FileListGenerator
+from .mark_dataset.dataset import MarkDataset
+from .mark_dataset.util import FileListGenerator
 
 
 class DS300W_LP(MarkDataset):
     # To use this class, there are two functions should be overridden.
+
+    def __init__(self, dataset_name, is_test=False):
+        super(DS300W_LP, self).__init__(dataset_name=dataset_name)
+        self.is_test = is_test
 
     def populate_dataset(self, image_dir):
         """Populate the 300W_LP dataset with essential data.
@@ -19,6 +23,12 @@ class DS300W_LP(MarkDataset):
         # 1. populate the image file list.
         lg = FileListGenerator()
         self.image_files = lg.generate_list(image_dir)
+        if self.is_test:
+            new_image_files = []
+            for img in self.image_files:
+                if img[-6:-4] == "_0":
+                    new_image_files.append(img)
+            self.image_files = new_image_files
 
         # 2. Populate the mark file list. Note the order should be same with the
         # image file list. Since the 300W_LP dataset had the mark file named

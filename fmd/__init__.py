@@ -10,3 +10,4 @@ from .helen import HELEN
 from .ibug import IBUG
 from .lfpw import LFPW
 from .wflw import WFLW
+from .ds300w_lp import DS300W_LP

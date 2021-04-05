@@ -39,7 +39,14 @@ def parse_heatmaps(heatmaps, image_size):
     return np.array(marks), heatmap_grid
 
 
-def draw_marks(image, marks):
+def draw_marks(image, marks, color=(255, 255, 255)):
+    """Draw mark points on image"""
+    for mark in marks:
+        cv2.circle(image, (int(mark[0]), int(
+            mark[1])), 1, color, -1, cv2.LINE_AA)
+
+
+def draw_marks2(image, marks):
     for m in marks:
         for mark in m:
             cv2.circle(image, tuple(mark.astype(int)), 2, (0, 255, 0), -1)
