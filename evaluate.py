@@ -11,12 +11,21 @@ from preprocessing import crop_face, normalize
 from quantization import TFLiteModelPredictor
 
 
-def compute_nme(prediction, ground_truth):
+def compute_nme(prediction, ground_truth, n_points):
     """This function is based on the official HRNet implementation."""
-
-    interocular = np.linalg.norm(ground_truth[45, ] - ground_truth[36, ])
+    if n_points == 29:  # cofw
+        interocular = np.linalg.norm(ground_truth[8, ] - ground_truth[9, ])
+    # elif n_points == 19:  # aflw
+    #     interocular = meta['box_size'][i]
+    elif n_points == 68:  # 300w
+        # interocular
+        interocular = np.linalg.norm(ground_truth[36, ] - ground_truth[45, ])
+    elif n_points == 98:
+        interocular = np.linalg.norm(ground_truth[60, ] - ground_truth[72, ])
+    else:
+        raise ValueError('Number of landmarks is wrong')
     rmse = np.sum(np.linalg.norm(
-        prediction - ground_truth, axis=1)) / interocular
+        prediction - ground_truth, axis=1)) / (interocular * n_points)
     return rmse
 
 
@@ -71,7 +80,7 @@ def evaluate(dataset: fmd.mark_dataset.dataset, model, n_points):
         # marks_prediction[:, 1] += y0
 
         # Compute NME.
-        nme_temp = compute_nme(marks_prediction, marks[:, :2])
+        nme_temp = compute_nme(marks_prediction, marks[:, :2], n_points)
 
         if nme_temp > 0.08:
             count_failure_008 += 1
