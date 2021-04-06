@@ -25,7 +25,7 @@ def compute_nme(prediction, ground_truth, n_points):
     else:
         raise ValueError('Number of landmarks is wrong')
     rmse = np.sum(np.linalg.norm(
-        prediction - ground_truth, axis=1)) / (interocular * n_points)
+        prediction - ground_truth, axis=0)) / (interocular * n_points)
     return rmse
 
 
@@ -105,7 +105,7 @@ def evaluate(dataset: fmd.mark_dataset.dataset, model, n_points):
     failure_010_rate = count_failure_010 / nme_count
 
     msg = "NME:{:.4f}, [008]:{:.4f}, [010]:{:.4f}".format(
-        nme, failure_008_rate, failure_010_rate)
+        100 * nme, failure_008_rate, failure_010_rate)
 
     return msg
 

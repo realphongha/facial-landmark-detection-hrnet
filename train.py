@@ -33,17 +33,17 @@ if __name__ == "__main__":
     name = "hrnetv2"
 
     # How many marks are there for a single face sample?
-    number_marks = 98
+    number_marks = 68
 
     # Where are the training files?
-    train_files_dir = "/home/robin/data/facial-marks/wflw_cropped/train"
+    train_files_dir = "/content/data/300W_LP_processed/train"
 
     # Where are the testing files?
-    test_files_dir = "/home/robin/data/facial-marks/wflw_cropped/test"
+    test_files_dir = "/content/data/300W_LP_processed/test"
 
     # Where are the validation files? Set `None` if no files available. Then 10%
     # of the training files will be used as validation samples.
-    val_files_dir = None
+    val_files_dir = "/content/data/300W_LP_processed/val"
 
     # Do you have a sample image which will be logged into tensorboard for
     # testing purpose?

@@ -58,6 +58,7 @@ class Universal(MarkDataset):
         marks = []
         with open(mark_file) as fid:
             mark_list = json.load(fid)
+            mark_list = mark_list[:self.meta['num_marks']]
             marks = np.reshape(
                 mark_list, (self.meta['num_marks'], -1)).astype(float)
         if marks.shape[1] == 2:
